@@ -4,6 +4,7 @@ import com.vishal.bankingsystem.account.enums.AccountStatus;
 import com.vishal.bankingsystem.account.service.AccountService;
 import com.vishal.bankingsystem.transaction.dto.TransactionDto;
 import com.vishal.bankingsystem.transaction.request.TransferRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
@@ -25,7 +26,7 @@ public class AccountController {
     }
 
     @PostMapping
-    public ResponseEntity<AccountDto> createAccount(@RequestBody AccountDto accountDto){
+    public ResponseEntity<AccountDto> createAccount(@Valid @RequestBody AccountDto accountDto){
         AccountDto createdAccount = accountService.createAccount(accountDto);
         return ResponseEntity.ok()
                 .header("X-Status-Message","Account Created Successfully")
@@ -39,7 +40,7 @@ public class AccountController {
     }
 
     @PatchMapping("/number/{accountNumber}")
-    public ResponseEntity<AccountDto> updateAccount(@PathVariable String accountNumber, @RequestBody AccountDto accountDto){
+    public ResponseEntity<AccountDto> updateAccount(@PathVariable String accountNumber, @Valid @RequestBody AccountDto accountDto){
         AccountDto updatedAccount = accountService.updateAccount(accountNumber, accountDto);
         return ResponseEntity.ok()
                 .header("X-Status-Message", "Updated Successfully")
@@ -102,7 +103,7 @@ public class AccountController {
     }
 
     @PostMapping("/transfer")
-    public ResponseEntity<String> transfer(@RequestBody TransferRequest request) {
+    public ResponseEntity<String> transfer(@Valid @RequestBody TransferRequest request) {
 
         accountService.transfer(request);
 

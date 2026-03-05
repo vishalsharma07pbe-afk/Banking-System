@@ -1,14 +1,25 @@
 package com.vishal.bankingsystem.account.dto;
 import com.vishal.bankingsystem.account.enums.AccountStatus;
 import com.vishal.bankingsystem.account.enums.AccountType;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
+
 import java.math.BigDecimal;
 
 public class AccountDto {
+    @NotBlank(message = "Account number is required")
     private String accountNumber;
+    @NotNull(message = "Account type is required")
     private AccountType accountType;
+    @NotNull(message = "Balance is required")
+    @PositiveOrZero(message = "Balance must be zero or greater")
     private BigDecimal balance;
+    @NotNull(message = "Account status is required")
     private AccountStatus status;
+    @NotNull(message = "Customer ID is required")
     private Long customerId;
+    @NotNull(message = "Branch ID is required")
     private Long branchId;
 
     public AccountDto() {}

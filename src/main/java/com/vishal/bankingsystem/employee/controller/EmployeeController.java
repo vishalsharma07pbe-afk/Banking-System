@@ -3,6 +3,7 @@ package com.vishal.bankingsystem.employee.controller;
 import com.vishal.bankingsystem.employee.dto.EmployeeDto;
 import com.vishal.bankingsystem.employee.enums.EmployeeRole;
 import com.vishal.bankingsystem.employee.service.EmployeeService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +20,7 @@ public class EmployeeController {
 
     // Create Employee
     @PostMapping
-    public EmployeeDto createEmployee(@RequestBody EmployeeDto employeeDto) {
+    public EmployeeDto createEmployee(@Valid @RequestBody EmployeeDto employeeDto) {
         return employeeService.createEmployee(employeeDto);
     }
 
@@ -38,7 +39,7 @@ public class EmployeeController {
     // Update Employee
     @PutMapping("/{employeeCode}")
     public EmployeeDto updateEmployee(@PathVariable String employeeCode,
-                                      @RequestBody EmployeeDto employeeDto) {
+                                      @Valid @RequestBody EmployeeDto employeeDto) {
         return employeeService.updateEmployee(employeeCode, employeeDto);
     }
 

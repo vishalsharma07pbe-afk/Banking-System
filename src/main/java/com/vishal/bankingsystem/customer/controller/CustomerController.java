@@ -2,6 +2,7 @@ package com.vishal.bankingsystem.customer.controller;
 
 import com.vishal.bankingsystem.customer.dto.CustomerDto;
 import com.vishal.bankingsystem.customer.service.CustomerService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,7 +18,7 @@ public class CustomerController {
     }
 
     @PostMapping
-    public CustomerDto createCustomer(@RequestBody CustomerDto dto){
+    public CustomerDto createCustomer(@Valid @RequestBody CustomerDto dto){
         return customerService.createCustomer(dto);
     }
 

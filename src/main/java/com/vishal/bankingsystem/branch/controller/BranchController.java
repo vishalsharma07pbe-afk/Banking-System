@@ -1,6 +1,7 @@
 package com.vishal.bankingsystem.branch.controller;
 import com.vishal.bankingsystem.branch.dto.BranchDto;
 import com.vishal.bankingsystem.branch.service.BranchService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,7 +18,7 @@ public class BranchController {
     }
 
     @PostMapping
-    public BranchDto createBranch(@RequestBody BranchDto branchDto) {
+    public BranchDto createBranch(@Valid @RequestBody BranchDto branchDto) {
         return branchService.createBranch(branchDto);
     }
 
@@ -33,7 +34,7 @@ public class BranchController {
 
     @PutMapping("/{id}")
     public BranchDto updateBranch(@PathVariable Long id,
-                                  @RequestBody BranchDto branchDto) {
+                                  @Valid @RequestBody BranchDto branchDto) {
         return branchService.updateBranch(id, branchDto);
     }
 
