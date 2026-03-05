@@ -96,10 +96,7 @@ public class AccountServiceImpl implements AccountService{
 
     @Override
     public void deleteAccount(String accountNumber) {
-        AccountEntity account = accountRepository.findByAccountNumber(accountNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
-        account.setStatus(AccountStatus.CLOSED);
-        accountRepository.save(account);
+        closeAccount(accountNumber);
     }
 
     @Override
@@ -144,8 +141,11 @@ public class AccountServiceImpl implements AccountService{
         if (account.getStatus() == AccountStatus.CLOSED) {
             throw new ConflictException("Account is already closed");
         }
-        if (account.getBalance().compareTo(BigDecimal.ZERO) > 0) {
-            throw new BadRequestException("Cannot close account with remaining balance");
+        if (account.getStatus() != AccountStatus.ACTIVE) {
+            throw new BadRequestException("Only active accounts can be closed");
+        }
+        if (account.getBalance().compareTo(BigDecimal.ZERO) != 0) {
+            throw new BadRequestException("Account can be closed only when balance is exactly 0");
         }
         account.setStatus(AccountStatus.CLOSED);
         AccountEntity savedAccount = accountRepository.save(account);
