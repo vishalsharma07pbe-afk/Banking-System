@@ -4,6 +4,7 @@ import com.vishal.bankingsystem.employee.dto.EmployeeDto;
 import com.vishal.bankingsystem.employee.enums.EmployeeRole;
 import com.vishal.bankingsystem.employee.service.EmployeeService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,24 +20,28 @@ public class EmployeeController {
     }
 
     // Create Employee
+    @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN')")
     @PostMapping
     public EmployeeDto createEmployee(@Valid @RequestBody EmployeeDto employeeDto) {
         return employeeService.createEmployee(employeeDto);
     }
 
     // Get Employee by employeeCode
+    @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN','OPERATIONS_OFFICER','BRANCH_MANAGER','INTERNAL_AUDITOR')")
     @GetMapping("/{employeeCode}")
     public EmployeeDto getEmployeeByCode(@PathVariable String employeeCode) {
         return employeeService.getEmployeeByCode(employeeCode);
     }
 
     // Get All Employees
+    @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN','OPERATIONS_OFFICER','BRANCH_MANAGER','INTERNAL_AUDITOR')")
     @GetMapping
     public List<EmployeeDto> getAllEmployees() {
         return employeeService.getAllEmployees();
     }
 
     // Update Employee
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{employeeCode}")
     public EmployeeDto updateEmployee(@PathVariable String employeeCode,
                                       @Valid @RequestBody EmployeeDto employeeDto) {
@@ -44,21 +49,25 @@ public class EmployeeController {
     }
 
     // Delete Employee
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{employeeCode}")
     public void deleteEmployee(@PathVariable String employeeCode) {
         employeeService.deleteEmployee(employeeCode);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN','OPERATIONS_OFFICER','BRANCH_MANAGER','INTERNAL_AUDITOR')")
     @GetMapping("/branch/{branchCode}")
     public List<EmployeeDto> getEmployeesByBranch(@PathVariable String branchCode){
         return employeeService.findByBranch_BranchCode(branchCode);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN','OPERATIONS_OFFICER','BRANCH_MANAGER','INTERNAL_AUDITOR')")
     @GetMapping("/role/{role}")
     public List<EmployeeDto> getEmployeesByRole(@PathVariable EmployeeRole role){
         return employeeService.findByRole(role);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN','OPERATIONS_OFFICER','BRANCH_MANAGER','INTERNAL_AUDITOR')")
     @GetMapping("/branch/{branchCode}/role/{role}")
     public List<EmployeeDto> getEmployeesByBranchAndRole(@PathVariable String branchCode,
                                                          @PathVariable EmployeeRole role){
