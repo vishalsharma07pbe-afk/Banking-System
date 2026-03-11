@@ -9,7 +9,10 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @RequiredArgsConstructor
@@ -19,16 +22,29 @@ public class CustomUserDetails implements UserDetails {
     //Convert roles and permissions into Spring Security authorities
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (users.getRole() == null || users.getRole().isEmpty()) {
+            return Collections.emptySet();
+        }
 
         Set<GrantedAuthority> authorities = new HashSet<>();
 
         for (RoleEntity role : users.getRole()) {
+            if (role == null) {
+                continue;
+            }
             // Add role as authority
             authorities.add(
                     new SimpleGrantedAuthority("ROLE_" + role.getName())
             );
             // Add permissions as authorities
+            if (role.getPermissions() == null) {
+                continue;
+            }
+
             for (PermissionEntity permission : role.getPermissions()) {
+                if (permission == null) {
+                    continue;
+                }
                 authorities.add(
                         new SimpleGrantedAuthority(permission.getName())
                 );
@@ -53,25 +69,27 @@ public class CustomUserDetails implements UserDetails {
     // Account expiration check
     @Override
     public boolean isAccountNonExpired() {
-        return true;
+        LocalDate accountExpiryDate = users.getAccountExpiryDate();
+        return accountExpiryDate == null || !accountExpiryDate.isBefore(LocalDate.now());
     }
 
     // Account lock check
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return !users.isAccountLocked()
+                && (users.getLockUntil() == null || !users.getLockUntil().isAfter(LocalDateTime.now()));
     }
 
     // Credentials expiration check
     @Override
     public boolean isCredentialsNonExpired() {
-        return true;
+        LocalDate passwordExpiryDate = users.getPasswordExpiryDate();
+        return passwordExpiryDate == null || !passwordExpiryDate.isBefore(LocalDate.now());
     }
 
     // Account enabled check
     @Override
     public boolean isEnabled() {
-        return true;
+        return users.isEnabled();
     }
 }
-

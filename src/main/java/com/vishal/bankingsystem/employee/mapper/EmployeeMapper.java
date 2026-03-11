@@ -17,6 +17,7 @@ public class EmployeeMapper {
                 employee.getEmail(),
                 employee.getPhoneNumber(),
                 employee.getRole(),
+                employee.getStatus(),
                 branchCode
         );
     }
@@ -31,6 +32,7 @@ public class EmployeeMapper {
         employee.setEmail(dto.getEmail());
         employee.setPhoneNumber(dto.getPhoneNumber());
         employee.setRole(dto.getRole());
+        employee.setStatus(dto.getStatus());
 
         return employee;
     }

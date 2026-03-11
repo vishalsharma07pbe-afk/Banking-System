@@ -5,6 +5,7 @@ import com.vishal.bankingsystem.customer.entity.Customer;
 import com.vishal.bankingsystem.customer.enums.CustomerStatus;
 import com.vishal.bankingsystem.customer.mapper.CustomerMapper;
 import com.vishal.bankingsystem.customer.repository.CustomerRepository;
+import com.vishal.bankingsystem.auth.service.UserAccountStateService;
 import com.vishal.bankingsystem.exception.ConflictException;
 import com.vishal.bankingsystem.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
@@ -16,8 +17,12 @@ import java.util.stream.Collectors;
 @Service
 public class CustomerServiceImpl implements CustomerService {
     private final CustomerRepository customerRepository;
-    public CustomerServiceImpl(CustomerRepository customerRepository){
+    private final UserAccountStateService userAccountStateService;
+
+    public CustomerServiceImpl(CustomerRepository customerRepository,
+                               UserAccountStateService userAccountStateService){
         this.customerRepository = customerRepository;
+        this.userAccountStateService = userAccountStateService;
     }
 
     @Override
@@ -42,9 +47,10 @@ public class CustomerServiceImpl implements CustomerService {
         customer.setState(dto.getState());
         customer.setCountry(dto.getCountry());
         customer.setPostalCode(dto.getPostalCode());
-        customer.setStatus(CustomerStatus.ACTIVE);
+        customer.setStatus(dto.getStatus() == null ? CustomerStatus.ACTIVE : dto.getStatus());
 
         Customer saved = customerRepository.save(customer);
+        userAccountStateService.syncUserState(saved.getEmail());
         return CustomerMapper.entityToDto(saved);
     }
 
@@ -69,7 +75,8 @@ public class CustomerServiceImpl implements CustomerService {
         Customer customer = customerRepository.findByCustomerNumber(customerNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
         customer.setStatus(CustomerStatus.INACTIVE);
-        customerRepository.save(customer);
+        Customer savedCustomer = customerRepository.save(customer);
+        userAccountStateService.syncUserState(savedCustomer.getEmail());
     }
 
     @Override
