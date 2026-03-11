@@ -50,8 +50,8 @@ public class BranchServiceImpl implements BranchService{
     }
 
     @Override
-    public BranchDto getBranchById(Long id) {
-        Branch branch = branchRepository.findById(id)
+    public BranchDto getBranchById(Long branchId) {
+        Branch branch = branchRepository.findById(branchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Branch not found"));
         return BranchMapper.entityToDto(branch);
     }
@@ -66,9 +66,9 @@ public class BranchServiceImpl implements BranchService{
     }
 
     @Override
-    public BranchDto updateBranch(Long id, BranchDto branchDto) {
+    public BranchDto updateBranch(Long branchId, BranchDto branchDto) {
 
-        Branch branch = branchRepository.findById(id)
+        Branch branch = branchRepository.findById(branchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Branch not found"));
         branch.setBranchName(branchDto.getBranchName());
         branch.setPhoneNumber(branchDto.getPhoneNumber());
@@ -83,22 +83,22 @@ public class BranchServiceImpl implements BranchService{
     }
 
     @Override
-    public void deleteBranch(Long id) {
-        Branch branch = branchRepository.findById(id)
+    public void closeBranch(Long branchId) {
+        Branch branch = branchRepository.findById(branchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Branch not found"));
         branch.setStatus(BranchStatus.CLOSED);
         branchRepository.save(branch);
     }
 
     @Override
-    public BranchDto findByIfscCode(String IfscCode) {
-        Branch branch = branchRepository.findByIfscCode(IfscCode)
-                .orElseThrow(() -> new ResourceNotFoundException("Branch not found for IFSC code: " + IfscCode));
+    public BranchDto getBranchByIfscCode(String ifscCode) {
+        Branch branch = branchRepository.findByIfscCode(ifscCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Branch not found for IFSC code: " + ifscCode));
         return BranchMapper.entityToDto(branch);
     }
 
     @Override
-    public BranchDto findByBranchCode(String branchCode) {
+    public BranchDto getBranchByBranchCode(String branchCode) {
         Branch branch = branchRepository.findByBranchCode(branchCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Branch not found for code: " + branchCode));
         return BranchMapper.entityToDto(branch);

@@ -9,10 +9,10 @@ import java.util.List;
 
 public interface TransactionService {
     TransactionDto getTransactionById(Long transactionId);
-    TransactionDto getByReferenceNumber(String referenceNumber);
+    TransactionDto getTransactionByReferenceNumber(String referenceNumber);
     List<TransactionDto> getAllTransactions();
-    List<TransactionDto> getByAccountNumber(String accountNumber);
-    List<TransactionDto> getByType(TransactionType type);
-    List<TransactionDto> getByStatus(TransactionStatus status);
-    List<TransactionDto> getByDateRange(LocalDateTime from, LocalDateTime to);
+    List<TransactionDto> getTransactionsByAccountNumber(String accountNumber);
+    List<TransactionDto> getTransactionsByType(TransactionType type);
+    List<TransactionDto> getTransactionsByStatus(TransactionStatus status);
+    List<TransactionDto> getTransactionsByDateRange(LocalDateTime from, LocalDateTime to);
 }

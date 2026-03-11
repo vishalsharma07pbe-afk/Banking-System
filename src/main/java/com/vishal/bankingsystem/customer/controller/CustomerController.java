@@ -20,14 +20,14 @@ public class CustomerController {
 
     @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN')")
     @PostMapping
-    public CustomerDto createCustomer(@Valid @RequestBody CustomerDto dto){
-        return customerService.createCustomer(dto);
+    public CustomerDto createCustomer(@Valid @RequestBody CustomerDto customerDto){
+        return customerService.createCustomer(customerDto);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN','SUPPORT_AGENT','OPERATIONS_OFFICER','BRANCH_MANAGER','INTERNAL_AUDITOR','COMPLIANCE_OFFICER','FRAUD_ANALYST')")
     @GetMapping("/{customerNumber}")
-    public CustomerDto getCustomer(@PathVariable String customerNumber){
-        return customerService.getCustomer(customerNumber);
+    public CustomerDto getCustomerByCustomerNumber(@PathVariable String customerNumber){
+        return customerService.getCustomerByCustomerNumber(customerNumber);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN','SUPPORT_AGENT','OPERATIONS_OFFICER','BRANCH_MANAGER','INTERNAL_AUDITOR','COMPLIANCE_OFFICER','FRAUD_ANALYST')")
@@ -38,13 +38,13 @@ public class CustomerController {
 
     @PreAuthorize("hasAnyRole('ADMIN')")
     @DeleteMapping("/{customerNumber}")
-    public void deleteCustomer(@PathVariable String customerNumber){
-        customerService.deleteCustomer(customerNumber);
+    public void deactivateCustomer(@PathVariable String customerNumber){
+        customerService.deactivateCustomer(customerNumber);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN','SUPPORT_AGENT','OPERATIONS_OFFICER','BRANCH_MANAGER','INTERNAL_AUDITOR','COMPLIANCE_OFFICER','FRAUD_ANALYST')")
     @GetMapping("/email/{email}")
     public CustomerDto getCustomerByEmail(@PathVariable String email){
-        return customerService.findByEmail(email);
+        return customerService.getCustomerByEmail(email);
     }
 }

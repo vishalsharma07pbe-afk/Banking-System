@@ -24,6 +24,7 @@ import com.vishal.bankingsystem.transaction.request.TransferRequest;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,7 +48,7 @@ public class AccountServiceImpl implements AccountService{
     }
 
     private String generateReferenceNumber() {
-        return "TXN-" + System.currentTimeMillis();
+        return "TXN-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
     }
 
     private void createTransaction(TransactionType type,
@@ -103,11 +104,6 @@ public class AccountServiceImpl implements AccountService{
     }
 
     @Override
-    public void deleteAccount(String accountNumber) {
-        closeAccount(accountNumber);
-    }
-
-    @Override
     public AccountDto updateAccount(String accountNumber, AccountDto accountDto) {
         AccountEntity account = accountRepository.findByAccountNumber(accountNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
@@ -119,26 +115,26 @@ public class AccountServiceImpl implements AccountService{
     }
 
     @Override
-    public AccountDto getAccountByNumber(String accountNumber) {
+    public AccountDto getAccountByAccountNumber(String accountNumber) {
         AccountEntity account = accountRepository.findByAccountNumber(accountNumber).orElseThrow(()->
                 new ResourceNotFoundException("Account not found"));
         return AccountMapper.entityToDto(account);
     }
 
     @Override
-    public List<AccountDto> findByStatus(AccountStatus status) {
+    public List<AccountDto> getAccountsByStatus(AccountStatus status) {
         List<AccountEntity> listOfAccounts = accountRepository.findByStatus(status);
         return listOfAccounts.stream().map(AccountMapper::entityToDto).collect(Collectors.toList());
     }
 
     @Override
-    public List<AccountDto> findByBalanceBetween(BigDecimal min, BigDecimal max) {
+    public List<AccountDto> getAccountsByBalanceRange(BigDecimal min, BigDecimal max) {
         List<AccountEntity> listOfAccounts = accountRepository.findByBalanceBetween(min,max);
         return listOfAccounts.stream().map(AccountMapper::entityToDto).collect(Collectors.toList());
     }
 
     @Override
-    public List<AccountDto> findByCustomerEmail(String email) {
+    public List<AccountDto> getAccountsByCustomerEmail(String email) {
         List<AccountEntity> account = accountRepository.findByCustomerEmail(email);
         return account.stream().map(AccountMapper::entityToDto).collect(Collectors.toList());
     }
@@ -238,7 +234,7 @@ public class AccountServiceImpl implements AccountService{
     }
 
     @Override
-    public List<TransactionDto>  transactionHistory(String accountNumber) {
+    public List<TransactionDto> getAccountTransactions(String accountNumber) {
         AccountEntity account = accountRepository.findByAccountNumber(accountNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
         List<Transaction> transactions = transactionRepository.findByFromAccountOrToAccount(account, account);
@@ -247,7 +243,7 @@ public class AccountServiceImpl implements AccountService{
 
     @Override
     @Transactional
-    public void transfer(TransferRequest request) {
+    public void transferFunds(TransferRequest request) {
         if (request.getTransferAmount().compareTo(BigDecimal.ZERO) <= 0){
             throw new BadRequestException("Amount must be greater than 0");
         }

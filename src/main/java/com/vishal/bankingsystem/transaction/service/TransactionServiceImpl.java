@@ -30,7 +30,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public TransactionDto getByReferenceNumber(String referenceNumber) {
+    public TransactionDto getTransactionByReferenceNumber(String referenceNumber) {
         Transaction transaction = transactionRepository.findByReferenceNumber(referenceNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Transaction not found for reference number: " + referenceNumber));
         return TransactionMapper.entityToDto(transaction);
@@ -45,7 +45,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<TransactionDto> getByAccountNumber(String accountNumber) {
+    public List<TransactionDto> getTransactionsByAccountNumber(String accountNumber) {
         return transactionRepository.findByAccountNumber(accountNumber).stream()
                 .sorted(Comparator.comparing(Transaction::getTransactionDate).reversed())
                 .map(TransactionMapper::entityToDto)
@@ -53,7 +53,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<TransactionDto> getByType(TransactionType type) {
+    public List<TransactionDto> getTransactionsByType(TransactionType type) {
         return transactionRepository.findByTransactionType(type).stream()
                 .sorted(Comparator.comparing(Transaction::getTransactionDate).reversed())
                 .map(TransactionMapper::entityToDto)
@@ -61,7 +61,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<TransactionDto> getByStatus(TransactionStatus status) {
+    public List<TransactionDto> getTransactionsByStatus(TransactionStatus status) {
         return transactionRepository.findByStatus(status).stream()
                 .sorted(Comparator.comparing(Transaction::getTransactionDate).reversed())
                 .map(TransactionMapper::entityToDto)
@@ -69,7 +69,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<TransactionDto> getByDateRange(LocalDateTime from, LocalDateTime to) {
+    public List<TransactionDto> getTransactionsByDateRange(LocalDateTime from, LocalDateTime to) {
         if (from.isAfter(to)) {
             throw new BadRequestException("'from' must be less than or equal to 'to'");
         }

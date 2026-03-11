@@ -2,7 +2,7 @@ package com.vishal.bankingsystem.security;
 
 import com.vishal.bankingsystem.auth.entity.PermissionEntity;
 import com.vishal.bankingsystem.auth.entity.RoleEntity;
-import com.vishal.bankingsystem.auth.entity.UsersEntity;
+import com.vishal.bankingsystem.auth.entity.UserEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -17,18 +17,18 @@ import java.util.Set;
 
 @RequiredArgsConstructor
 public class CustomUserDetails implements UserDetails {
-    private final UsersEntity users;
+    private final UserEntity users;
 
     //Convert roles and permissions into Spring Security authorities
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (users.getRole() == null || users.getRole().isEmpty()) {
+        if (users.getRoles() == null || users.getRoles().isEmpty()) {
             return Collections.emptySet();
         }
 
         Set<GrantedAuthority> authorities = new HashSet<>();
 
-        for (RoleEntity role : users.getRole()) {
+        for (RoleEntity role : users.getRoles()) {
             if (role == null) {
                 continue;
             }

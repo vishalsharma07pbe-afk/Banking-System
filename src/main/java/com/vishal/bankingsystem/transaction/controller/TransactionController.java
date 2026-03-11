@@ -24,7 +24,7 @@ public class TransactionController {
     }
 
     @PreAuthorize("hasAuthority('VIEW_TRANSACTION_HISTORY')")
-    @GetMapping("/id/{transactionId}")
+    @GetMapping("/{transactionId}")
     public TransactionDto getById(@PathVariable Long transactionId) {
         return transactionService.getTransactionById(transactionId);
     }
@@ -32,37 +32,28 @@ public class TransactionController {
     @PreAuthorize("hasAuthority('VIEW_TRANSACTION_HISTORY')")
     @GetMapping("/reference/{referenceNumber}")
     public TransactionDto getByReferenceNumber(@PathVariable String referenceNumber) {
-        return transactionService.getByReferenceNumber(referenceNumber);
+        return transactionService.getTransactionByReferenceNumber(referenceNumber);
     }
 
     @PreAuthorize("hasAuthority('VIEW_TRANSACTION_HISTORY')")
     @GetMapping
-    public List<TransactionDto> getAllTransactions() {
+    public List<TransactionDto> getTransactions(@RequestParam(required = false) String accountNumber,
+                                                @RequestParam(required = false) TransactionType type,
+                                                @RequestParam(required = false) TransactionStatus status,
+                                                @RequestParam(required = false) LocalDateTime from,
+                                                @RequestParam(required = false) LocalDateTime to) {
+        if (accountNumber != null && !accountNumber.isBlank()) {
+            return transactionService.getTransactionsByAccountNumber(accountNumber);
+        }
+        if (type != null) {
+            return transactionService.getTransactionsByType(type);
+        }
+        if (status != null) {
+            return transactionService.getTransactionsByStatus(status);
+        }
+        if (from != null && to != null) {
+            return transactionService.getTransactionsByDateRange(from, to);
+        }
         return transactionService.getAllTransactions();
-    }
-
-    @PreAuthorize("hasAuthority('VIEW_TRANSACTION_HISTORY')")
-    @GetMapping("/account/{accountNumber}")
-    public List<TransactionDto> getByAccountNumber(@PathVariable String accountNumber) {
-        return transactionService.getByAccountNumber(accountNumber);
-    }
-
-    @PreAuthorize("hasAuthority('VIEW_TRANSACTION_HISTORY')")
-    @GetMapping("/type/{type}")
-    public List<TransactionDto> getByType(@PathVariable TransactionType type) {
-        return transactionService.getByType(type);
-    }
-
-    @PreAuthorize("hasAuthority('VIEW_TRANSACTION_HISTORY')")
-    @GetMapping("/status/{status}")
-    public List<TransactionDto> getByStatus(@PathVariable TransactionStatus status) {
-        return transactionService.getByStatus(status);
-    }
-
-    @PreAuthorize("hasAuthority('VIEW_TRANSACTION_HISTORY')")
-    @GetMapping("/date-range")
-    public List<TransactionDto> getByDateRange(@RequestParam LocalDateTime from,
-                                               @RequestParam LocalDateTime to) {
-        return transactionService.getByDateRange(from, to);
     }
 }

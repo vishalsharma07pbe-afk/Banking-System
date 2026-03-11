@@ -3,7 +3,7 @@ package com.vishal.bankingsystem.auth.service;
 import com.vishal.bankingsystem.account.entity.AccountEntity;
 import com.vishal.bankingsystem.account.enums.AccountStatus;
 import com.vishal.bankingsystem.account.repository.AccountRepository;
-import com.vishal.bankingsystem.auth.entity.UsersEntity;
+import com.vishal.bankingsystem.auth.entity.UserEntity;
 import com.vishal.bankingsystem.auth.repository.UserRepository;
 import com.vishal.bankingsystem.customer.entity.Customer;
 import com.vishal.bankingsystem.customer.enums.CustomerStatus;
@@ -28,8 +28,8 @@ public class UserAccountStateService {
     private final AccountRepository accountRepository;
 
     @Transactional
-    public UsersEntity syncUserState(String username) {
-        UsersEntity user = userRepository.findByUserName(username).orElse(null);
+    public UserEntity syncUserState(String username) {
+        UserEntity user = userRepository.findByUserName(username).orElse(null);
         if (user == null) {
             return null;
         }
@@ -38,7 +38,7 @@ public class UserAccountStateService {
         boolean shouldLock = false;
         LocalDate today = LocalDate.now();
 
-        Customer customer = customerRepository.findByEmail(username).orElse(null);
+        Customer customer = resolveCustomer(user, username);
         if (customer != null) {
             if (customer.getStatus() == CustomerStatus.INACTIVE) {
                 shouldDisable = true;
@@ -65,7 +65,7 @@ public class UserAccountStateService {
             }
         }
 
-        Employee employee = employeeRepository.findByEmail(username).orElse(null);
+        Employee employee = resolveEmployee(user, username);
         if (employee != null) {
             if (employee.getStatus() == EmployeeStatus.TERMINATED) {
                 shouldDisable = true;
@@ -84,6 +84,20 @@ public class UserAccountStateService {
         }
 
         return userRepository.save(user);
+    }
+
+    private Customer resolveCustomer(UserEntity user, String username) {
+        if (user.getCustomer() != null) {
+            return user.getCustomer();
+        }
+        return customerRepository.findByEmail(username).orElse(null);
+    }
+
+    private Employee resolveEmployee(UserEntity user, String username) {
+        if (user.getEmployee() != null) {
+            return user.getEmployee();
+        }
+        return employeeRepository.findByEmail(username).orElse(null);
     }
 
     @Transactional

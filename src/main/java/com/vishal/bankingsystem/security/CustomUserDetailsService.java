@@ -1,5 +1,5 @@
 package com.vishal.bankingsystem.security;
-import com.vishal.bankingsystem.auth.entity.UsersEntity;
+import com.vishal.bankingsystem.auth.entity.UserEntity;
 import com.vishal.bankingsystem.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,7 +18,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         String normalizedUsername = username == null ? "" : username.trim();
 
-        UsersEntity user = userRepository.findByUserName(normalizedUsername)
+        UserEntity user = userRepository.findByUserName(normalizedUsername)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
         return new CustomUserDetails(user);

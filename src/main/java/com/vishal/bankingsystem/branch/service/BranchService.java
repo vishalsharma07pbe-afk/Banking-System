@@ -4,10 +4,10 @@ import java.util.List;
 
 public interface BranchService {
     BranchDto createBranch(BranchDto branchDto);
-    BranchDto getBranchById(Long id);
+    BranchDto getBranchById(Long branchId);
     List<BranchDto> getAllBranches();
-    BranchDto updateBranch(Long id, BranchDto branchDto);
-    void deleteBranch(Long id);
-    BranchDto findByIfscCode(String IfscCode);
-    BranchDto findByBranchCode(String branchCode);
+    BranchDto updateBranch(Long branchId, BranchDto branchDto);
+    void closeBranch(Long branchId);
+    BranchDto getBranchByIfscCode(String ifscCode);
+    BranchDto getBranchByBranchCode(String branchCode);
 }

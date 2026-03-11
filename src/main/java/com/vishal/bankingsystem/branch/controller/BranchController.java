@@ -46,18 +46,18 @@ public class BranchController {
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public void deleteBranch(@PathVariable Long id) {
-        branchService.deleteBranch(id);
+        branchService.closeBranch(id);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN','OPERATIONS_OFFICER','BRANCH_MANAGER','INTERNAL_AUDITOR')")
     @GetMapping("/code/{branchCode}")
     public ResponseEntity<BranchDto> getByBranchCode(@PathVariable String branchCode){
-        return ResponseEntity.ok(branchService.findByBranchCode(branchCode));
+        return ResponseEntity.ok(branchService.getBranchByBranchCode(branchCode));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN','OPERATIONS_OFFICER','BRANCH_MANAGER','INTERNAL_AUDITOR')")
     @GetMapping("/ifsc/{ifscCode}")
     public ResponseEntity<BranchDto> getByIfscCode(@PathVariable String ifscCode){
-        return ResponseEntity.ok(branchService.findByIfscCode(ifscCode));
+        return ResponseEntity.ok(branchService.getBranchByIfscCode(ifscCode));
     }
 }

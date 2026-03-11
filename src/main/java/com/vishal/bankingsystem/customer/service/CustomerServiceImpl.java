@@ -26,8 +26,8 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public CustomerDto createCustomer(CustomerDto dto){
-        Optional<Customer> existingCustomer = customerRepository.findByEmail(dto.getEmail());
+    public CustomerDto createCustomer(CustomerDto customerDto){
+        Optional<Customer> existingCustomer = customerRepository.findByEmail(customerDto.getEmail());
         Customer customer;
 
         if (existingCustomer.isPresent()) {
@@ -36,18 +36,18 @@ public class CustomerServiceImpl implements CustomerService {
                 throw new ConflictException("Customer already exists and is not inactive");
             }
         } else {
-            customer = CustomerMapper.dtoToEntity(dto);
+            customer = CustomerMapper.dtoToEntity(customerDto);
         }
 
-        customer.setFirstName(dto.getFirstName());
-        customer.setLastName(dto.getLastName());
-        customer.setEmail(dto.getEmail());
-        customer.setPhoneNumber(dto.getPhoneNumber());
-        customer.setCity(dto.getCity());
-        customer.setState(dto.getState());
-        customer.setCountry(dto.getCountry());
-        customer.setPostalCode(dto.getPostalCode());
-        customer.setStatus(dto.getStatus() == null ? CustomerStatus.ACTIVE : dto.getStatus());
+        customer.setFirstName(customerDto.getFirstName());
+        customer.setLastName(customerDto.getLastName());
+        customer.setEmail(customerDto.getEmail());
+        customer.setPhoneNumber(customerDto.getPhoneNumber());
+        customer.setCity(customerDto.getCity());
+        customer.setState(customerDto.getState());
+        customer.setCountry(customerDto.getCountry());
+        customer.setPostalCode(customerDto.getPostalCode());
+        customer.setStatus(customerDto.getStatus() == null ? CustomerStatus.ACTIVE : customerDto.getStatus());
 
         Customer saved = customerRepository.save(customer);
         userAccountStateService.syncUserState(saved.getEmail());
@@ -55,7 +55,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public CustomerDto getCustomer(String customerNumber){
+    public CustomerDto getCustomerByCustomerNumber(String customerNumber){
         Customer customer = customerRepository.findByCustomerNumber(customerNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
         return CustomerMapper.entityToDto(customer);
@@ -71,7 +71,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public void deleteCustomer(String customerNumber){
+    public void deactivateCustomer(String customerNumber){
         Customer customer = customerRepository.findByCustomerNumber(customerNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
         customer.setStatus(CustomerStatus.INACTIVE);
@@ -80,7 +80,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public CustomerDto findByEmail(String email) {
+    public CustomerDto getCustomerByEmail(String email) {
         Customer customer = customerRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found for email: " + email));
         return CustomerMapper.entityToDto(customer);

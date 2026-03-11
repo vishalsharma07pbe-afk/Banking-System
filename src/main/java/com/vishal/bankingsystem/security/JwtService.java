@@ -1,10 +1,10 @@
 package com.vishal.bankingsystem.security;
 
+import com.vishal.bankingsystem.config.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -16,12 +16,15 @@ import javax.crypto.SecretKey;
 public class JwtService {
 
     private final SecretKey signingKey;
+    private final long jwtExpirationMillis;
 
-    public JwtService(@Value("${app.jwt.secret}") String secretKey) {
+    public JwtService(JwtProperties jwtProperties) {
+        String secretKey = jwtProperties.getSecret();
         if (secretKey == null || secretKey.isBlank()) {
             throw new IllegalStateException("JWT secret must be provided through app.jwt.secret or JWT_SECRET");
         }
         this.signingKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
+        this.jwtExpirationMillis = jwtProperties.getExpirationMinutes() * 60 * 1000;
     }
 
     public String extractUsername(String token) {
@@ -51,7 +54,7 @@ public class JwtService {
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMillis))
                 .signWith(signingKey)
                 .compact();
     }

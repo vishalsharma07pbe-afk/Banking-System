@@ -29,8 +29,8 @@ public class EmployeeController {
     // Get Employee by employeeCode
     @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN','OPERATIONS_OFFICER','BRANCH_MANAGER','INTERNAL_AUDITOR')")
     @GetMapping("/{employeeCode}")
-    public EmployeeDto getEmployeeByCode(@PathVariable String employeeCode) {
-        return employeeService.getEmployeeByCode(employeeCode);
+    public EmployeeDto getEmployeeByEmployeeCode(@PathVariable String employeeCode) {
+        return employeeService.getEmployeeByEmployeeCode(employeeCode);
     }
 
     // Get All Employees
@@ -51,27 +51,27 @@ public class EmployeeController {
     // Delete Employee
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{employeeCode}")
-    public void deleteEmployee(@PathVariable String employeeCode) {
-        employeeService.deleteEmployee(employeeCode);
+    public void terminateEmployee(@PathVariable String employeeCode) {
+        employeeService.terminateEmployee(employeeCode);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN','OPERATIONS_OFFICER','BRANCH_MANAGER','INTERNAL_AUDITOR')")
     @GetMapping("/branch/{branchCode}")
     public List<EmployeeDto> getEmployeesByBranch(@PathVariable String branchCode){
-        return employeeService.findByBranch_BranchCode(branchCode);
+        return employeeService.getEmployeesByBranchCode(branchCode);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN','OPERATIONS_OFFICER','BRANCH_MANAGER','INTERNAL_AUDITOR')")
     @GetMapping("/role/{role}")
     public List<EmployeeDto> getEmployeesByRole(@PathVariable EmployeeRole role){
-        return employeeService.findByRole(role);
+        return employeeService.getEmployeesByRole(role);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ADMIN','OPERATIONS_OFFICER','BRANCH_MANAGER','INTERNAL_AUDITOR')")
     @GetMapping("/branch/{branchCode}/role/{role}")
     public List<EmployeeDto> getEmployeesByBranchAndRole(@PathVariable String branchCode,
                                                          @PathVariable EmployeeRole role){
-        return employeeService.findByBranch_BranchCodeAndRole(branchCode, role);
+        return employeeService.getEmployeesByBranchCodeAndRole(branchCode, role);
     }
 
 }

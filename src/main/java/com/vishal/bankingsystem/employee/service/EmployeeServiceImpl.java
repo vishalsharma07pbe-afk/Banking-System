@@ -85,7 +85,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public EmployeeDto getEmployeeByCode(String employeeCode) {
+    public EmployeeDto getEmployeeByEmployeeCode(String employeeCode) {
 
         Employee employee = employeeRepository.findByEmployeeCode(employeeCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
@@ -129,7 +129,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public void deleteEmployee(String employeeCode) {
+    public void terminateEmployee(String employeeCode) {
 
         Employee employee = employeeRepository.findByEmployeeCode(employeeCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
@@ -139,7 +139,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public List<EmployeeDto> findByBranch_BranchCode(String branchCode) {
+    public List<EmployeeDto> getEmployeesByBranchCode(String branchCode) {
         List<Employee> employees = employeeRepository.findByBranch_BranchCode(branchCode);
         List<EmployeeDto> employeeDtos = employees.stream()
                 .filter(employee -> employee.getStatus() == EmployeeStatus.ACTIVE)
@@ -151,7 +151,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public List<EmployeeDto> findByRole(EmployeeRole role) {
+    public List<EmployeeDto> getEmployeesByRole(EmployeeRole role) {
         List<Employee> employees = employeeRepository.findByRole(role);
         List<EmployeeDto> employeeDtos = employees.stream()
                 .filter(employee -> employee.getStatus() == EmployeeStatus.ACTIVE)
@@ -162,7 +162,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public List<EmployeeDto> findByBranch_BranchCodeAndRole(String branchCode, EmployeeRole role) {
+    public List<EmployeeDto> getEmployeesByBranchCodeAndRole(String branchCode, EmployeeRole role) {
         List<Employee> employees =
                 employeeRepository.findByBranch_BranchCodeAndRole(branchCode, role);
         List<EmployeeDto> employeeDtos = employees.stream()

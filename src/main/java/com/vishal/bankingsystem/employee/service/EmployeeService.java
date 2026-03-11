@@ -8,14 +8,11 @@ import java.util.List;
 public interface EmployeeService {
 
     EmployeeDto createEmployee(EmployeeDto employeeDto);
-    EmployeeDto getEmployeeByCode(String employeeCode);
+    EmployeeDto getEmployeeByEmployeeCode(String employeeCode);
     List<EmployeeDto> getAllEmployees();
     EmployeeDto updateEmployee(String employeeCode, EmployeeDto employeeDto);
-    void deleteEmployee(String employeeCode);
-    // Get employees by branch
-    List<EmployeeDto> findByBranch_BranchCode(String branchCode);
-    // Get employees by role
-    List<EmployeeDto> findByRole(EmployeeRole role);
-    // Get employees by branch and role
-    List<EmployeeDto> findByBranch_BranchCodeAndRole(String branchCode, EmployeeRole role);
+    void terminateEmployee(String employeeCode);
+    List<EmployeeDto> getEmployeesByBranchCode(String branchCode);
+    List<EmployeeDto> getEmployeesByRole(EmployeeRole role);
+    List<EmployeeDto> getEmployeesByBranchCodeAndRole(String branchCode, EmployeeRole role);
 }

@@ -1,5 +1,7 @@
 package com.vishal.bankingsystem.auth.entity;
 
+import com.vishal.bankingsystem.customer.entity.Customer;
+import com.vishal.bankingsystem.employee.entity.Employee;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,11 +13,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "user")
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
-public class UsersEntity {
+public class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
@@ -46,6 +48,14 @@ public class UsersEntity {
     @Column(nullable = false)
     private LocalDate passwordExpiryDate;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", unique = true)
+    private Customer customer;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", unique = true)
+    private Employee employee;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -53,7 +63,7 @@ public class UsersEntity {
             inverseJoinColumns = @JoinColumn(name = "role_id")
 
     )
-    private Set<RoleEntity> role = new HashSet<>();
+    private Set<RoleEntity> roles = new HashSet<>();
 
     @PrePersist
     @PreUpdate

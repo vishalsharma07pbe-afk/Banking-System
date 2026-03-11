@@ -6,8 +6,8 @@ import java.util.List;
 
 public interface CustomerService {
     CustomerDto createCustomer(CustomerDto customerDto);
-    CustomerDto getCustomer(String customerNumber);
+    CustomerDto getCustomerByCustomerNumber(String customerNumber);
     List<CustomerDto> getAllCustomers();
-    void deleteCustomer(String customerNumber);
-    CustomerDto findByEmail(String email);
+    void deactivateCustomer(String customerNumber);
+    CustomerDto getCustomerByEmail(String email);
 }
