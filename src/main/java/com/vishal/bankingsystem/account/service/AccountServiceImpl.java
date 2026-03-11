@@ -2,6 +2,7 @@ package com.vishal.bankingsystem.account.service;
 import com.vishal.bankingsystem.account.enums.AccountStatus;
 import com.vishal.bankingsystem.account.dto.AccountDto;
 import com.vishal.bankingsystem.account.entity.AccountEntity;
+import com.vishal.bankingsystem.auth.service.UserAccountStateService;
 import com.vishal.bankingsystem.account.repository.AccountRepository;
 import com.vishal.bankingsystem.account.mapper.AccountMapper;
 import com.vishal.bankingsystem.branch.entity.Branch;
@@ -31,12 +32,18 @@ public class AccountServiceImpl implements AccountService{
     public final CustomerRepository customerRepository;
     public final BranchRepository branchRepository;
     private final TransactionRepository transactionRepository;
+    private final UserAccountStateService userAccountStateService;
 
-    public AccountServiceImpl(AccountRepository accountRepository, CustomerRepository customerRepository, BranchRepository branchRepository, TransactionRepository transactionRepository) {
+    public AccountServiceImpl(AccountRepository accountRepository,
+                              CustomerRepository customerRepository,
+                              BranchRepository branchRepository,
+                              TransactionRepository transactionRepository,
+                              UserAccountStateService userAccountStateService) {
         this.accountRepository = accountRepository;
         this.customerRepository = customerRepository;
         this.branchRepository = branchRepository;
         this.transactionRepository = transactionRepository;
+        this.userAccountStateService = userAccountStateService;
     }
 
     private String generateReferenceNumber() {
@@ -91,6 +98,7 @@ public class AccountServiceImpl implements AccountService{
         account.setBranch(branch);
         account.setStatus(AccountStatus.ACTIVE); // default
         AccountEntity savedAccount = accountRepository.save(account);
+        userAccountStateService.syncUserState(savedAccount.getCustomer().getEmail());
         return AccountMapper.entityToDto(savedAccount);
     }
 
@@ -106,6 +114,7 @@ public class AccountServiceImpl implements AccountService{
         account.setAccountType(accountDto.getAccountType());
         account.setStatus(accountDto.getStatus());
         AccountEntity savedAccount = accountRepository.save(account);
+        userAccountStateService.syncUserState(savedAccount.getCustomer().getEmail());
         return AccountMapper.entityToDto(savedAccount);
     }
 
@@ -149,6 +158,7 @@ public class AccountServiceImpl implements AccountService{
         }
         account.setStatus(AccountStatus.CLOSED);
         AccountEntity savedAccount = accountRepository.save(account);
+        userAccountStateService.syncUserState(savedAccount.getCustomer().getEmail());
         return AccountMapper.entityToDto(savedAccount);
     }
 
@@ -161,6 +171,7 @@ public class AccountServiceImpl implements AccountService{
         }
         account.setStatus(AccountStatus.BLOCKED);
         AccountEntity savedAccount = accountRepository.save(account);
+        userAccountStateService.syncUserState(savedAccount.getCustomer().getEmail());
         return AccountMapper.entityToDto(savedAccount);
     }
 
@@ -173,6 +184,7 @@ public class AccountServiceImpl implements AccountService{
         }
         account.setStatus(AccountStatus.ACTIVE);
         AccountEntity savedAccount = accountRepository.save(account);
+        userAccountStateService.syncUserState(savedAccount.getCustomer().getEmail());
         return AccountMapper.entityToDto(savedAccount);
     }
 

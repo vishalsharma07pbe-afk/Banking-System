@@ -2,6 +2,7 @@ package com.vishal.bankingsystem.employee.service;
 
 import com.vishal.bankingsystem.branch.entity.Branch;
 import com.vishal.bankingsystem.branch.repository.BranchRepository;
+import com.vishal.bankingsystem.auth.service.UserAccountStateService;
 import com.vishal.bankingsystem.employee.dto.EmployeeDto;
 import com.vishal.bankingsystem.employee.entity.Employee;
 import com.vishal.bankingsystem.employee.enums.EmployeeRole;
@@ -22,11 +23,14 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final BranchRepository branchRepository;
+    private final UserAccountStateService userAccountStateService;
 
     public EmployeeServiceImpl(EmployeeRepository employeeRepository,
-                               BranchRepository branchRepository) {
+                               BranchRepository branchRepository,
+                               UserAccountStateService userAccountStateService) {
         this.employeeRepository = employeeRepository;
         this.branchRepository = branchRepository;
+        this.userAccountStateService = userAccountStateService;
     }
 
     // Employee Code Generator
@@ -71,10 +75,11 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setEmail(employeeDto.getEmail());
         employee.setPhoneNumber(employeeDto.getPhoneNumber());
         employee.setRole(employeeDto.getRole());
-        employee.setStatus(EmployeeStatus.ACTIVE);
+        employee.setStatus(employeeDto.getStatus() == null ? EmployeeStatus.ACTIVE : employeeDto.getStatus());
         employee.setBranch(branch);
 
         Employee savedEmployee = employeeRepository.save(employee);
+        userAccountStateService.syncUserState(savedEmployee.getEmail());
 
         return EmployeeMapper.entityToDto(savedEmployee);
     }
@@ -107,15 +112,18 @@ public class EmployeeServiceImpl implements EmployeeService {
         Branch branch = branchRepository.findByBranchCode(employeeDto.getBranchCode())
                 .orElseThrow(() -> new ResourceNotFoundException("Branch not found"));
 
+        String previousEmail = employee.getEmail();
         employee.setFirstName(employeeDto.getFirstName());
         employee.setLastName(employeeDto.getLastName());
         employee.setEmail(employeeDto.getEmail());
         employee.setPhoneNumber(employeeDto.getPhoneNumber());
         employee.setRole(employeeDto.getRole());
-        employee.setStatus(EmployeeStatus.ACTIVE);
+        employee.setStatus(employeeDto.getStatus() == null ? EmployeeStatus.ACTIVE : employeeDto.getStatus());
         employee.setBranch(branch);
 
         Employee savedEmployee = employeeRepository.save(employee);
+        userAccountStateService.syncUserState(previousEmail);
+        userAccountStateService.syncUserState(savedEmployee.getEmail());
 
         return EmployeeMapper.entityToDto(savedEmployee);
     }
@@ -126,7 +134,8 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee employee = employeeRepository.findByEmployeeCode(employeeCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
         employee.setStatus(EmployeeStatus.TERMINATED);
-        employeeRepository.save(employee);
+        Employee savedEmployee = employeeRepository.save(employee);
+        userAccountStateService.syncUserState(savedEmployee.getEmail());
     }
 
     @Override

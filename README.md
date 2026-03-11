@@ -53,6 +53,10 @@ Environment variables supported:
 - `DB_NAME` (default: `banking_system`)
 - `DB_USERNAME` (default: `postgres`)
 - `DB_PASSWORD` (default: `postgres`)
+- `JWT_SECRET` (required, use a long random value and never commit it)
+- `app.security.password-expiry-months` (default: `6`)
+- `app.security.max-failed-login-attempts` (default: `5`)
+- `app.security.lock-duration-minutes` (default: `30`)
 
 ## Run Locally
 1. Create database:
@@ -62,6 +66,7 @@ CREATE DATABASE banking_system;
 
 2. Start application:
 ```bash
+export JWT_SECRET='replace-with-a-long-random-secret'
 ./mvnw spring-boot:run
 ```
 
@@ -128,6 +133,8 @@ After app startup, check:
 - `/v3/api-docs`
 
 ## Notes
+- JWT signing is configured from the `JWT_SECRET` environment variable rather than a hardcoded source value.
+- Password expiry and temporary lockout are maintained automatically from the authentication flow.
 - `transaction/controller/TransactionController` is currently a placeholder.
 - Current tests are basic (`contextLoads`); more feature-level tests are recommended.
 
