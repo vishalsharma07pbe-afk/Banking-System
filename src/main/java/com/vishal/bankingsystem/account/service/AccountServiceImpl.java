@@ -99,7 +99,7 @@ public class AccountServiceImpl implements AccountService{
         account.setBranch(branch);
         account.setStatus(AccountStatus.ACTIVE); // default
         AccountEntity savedAccount = accountRepository.save(account);
-        userAccountStateService.syncUserState(savedAccount.getCustomer().getEmail());
+        userAccountStateService.syncUserStateForCustomer(savedAccount.getCustomer().getCustomerId());
         return AccountMapper.entityToDto(savedAccount);
     }
 
@@ -110,7 +110,7 @@ public class AccountServiceImpl implements AccountService{
         account.setAccountType(accountDto.getAccountType());
         account.setStatus(accountDto.getStatus());
         AccountEntity savedAccount = accountRepository.save(account);
-        userAccountStateService.syncUserState(savedAccount.getCustomer().getEmail());
+        userAccountStateService.syncUserStateForCustomer(savedAccount.getCustomer().getCustomerId());
         return AccountMapper.entityToDto(savedAccount);
     }
 
@@ -134,9 +134,9 @@ public class AccountServiceImpl implements AccountService{
     }
 
     @Override
-    public List<AccountDto> getAccountsByCustomerEmail(String email) {
-        List<AccountEntity> account = accountRepository.findByCustomerEmail(email);
-        return account.stream().map(AccountMapper::entityToDto).collect(Collectors.toList());
+    public List<AccountDto> getAccountsByCustomerId(Long customerId) {
+        List<AccountEntity> accounts = accountRepository.findByCustomerCustomerId(customerId);
+        return accounts.stream().map(AccountMapper::entityToDto).collect(Collectors.toList());
     }
 
     @Override
@@ -154,7 +154,7 @@ public class AccountServiceImpl implements AccountService{
         }
         account.setStatus(AccountStatus.CLOSED);
         AccountEntity savedAccount = accountRepository.save(account);
-        userAccountStateService.syncUserState(savedAccount.getCustomer().getEmail());
+        userAccountStateService.syncUserStateForCustomer(savedAccount.getCustomer().getCustomerId());
         return AccountMapper.entityToDto(savedAccount);
     }
 
@@ -167,7 +167,7 @@ public class AccountServiceImpl implements AccountService{
         }
         account.setStatus(AccountStatus.BLOCKED);
         AccountEntity savedAccount = accountRepository.save(account);
-        userAccountStateService.syncUserState(savedAccount.getCustomer().getEmail());
+        userAccountStateService.syncUserStateForCustomer(savedAccount.getCustomer().getCustomerId());
         return AccountMapper.entityToDto(savedAccount);
     }
 
@@ -180,7 +180,7 @@ public class AccountServiceImpl implements AccountService{
         }
         account.setStatus(AccountStatus.ACTIVE);
         AccountEntity savedAccount = accountRepository.save(account);
-        userAccountStateService.syncUserState(savedAccount.getCustomer().getEmail());
+        userAccountStateService.syncUserStateForCustomer(savedAccount.getCustomer().getCustomerId());
         return AccountMapper.entityToDto(savedAccount);
     }
 
@@ -281,4 +281,5 @@ public class AccountServiceImpl implements AccountService{
                 toAccount
         );
     }
+
 }

@@ -15,7 +15,7 @@ public interface AccountService {
     AccountDto getAccountByAccountNumber(String accountNumber);
     List<AccountDto> getAccountsByStatus(AccountStatus status);
     List<AccountDto> getAccountsByBalanceRange(BigDecimal min, BigDecimal max);
-    List<AccountDto> getAccountsByCustomerEmail(String email);
+    List<AccountDto> getAccountsByCustomerId(Long customerId);
     AccountDto closeAccount(String accountNumber);
     AccountDto blockAccount(String accountNumber);
     AccountDto activateAccount(String accountNumber);

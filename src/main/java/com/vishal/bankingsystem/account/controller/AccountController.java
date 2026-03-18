@@ -61,19 +61,19 @@ public class AccountController {
     @GetMapping
     public ResponseEntity<List<AccountDto>> getAccounts(
             @RequestParam(required = false) AccountStatus status,
-            @RequestParam(required = false) String customerEmail,
+            @RequestParam(required = false) Long customerId,
             @RequestParam(required = false) BigDecimal minBalance,
             @RequestParam(required = false) BigDecimal maxBalance) {
         if (status != null) {
             return ResponseEntity.ok(accountService.getAccountsByStatus(status));
         }
-        if (customerEmail != null && !customerEmail.isBlank()) {
-            return ResponseEntity.ok(accountService.getAccountsByCustomerEmail(customerEmail));
+        if (customerId != null) {
+            return ResponseEntity.ok(accountService.getAccountsByCustomerId(customerId));
         }
         if (minBalance != null && maxBalance != null) {
             return ResponseEntity.ok(accountService.getAccountsByBalanceRange(minBalance, maxBalance));
         }
-        throw new BadRequestException("Provide status, customerEmail, or both minBalance and maxBalance");
+        throw new BadRequestException("Provide status, customerId, or both minBalance and maxBalance");
     }
 
     @PreAuthorize("hasAnyAuthority('FREEZE_ACCOUNT', 'UNFREEZE_ACCOUNT')")

@@ -79,7 +79,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setBranch(branch);
 
         Employee savedEmployee = employeeRepository.save(employee);
-        userAccountStateService.syncUserState(savedEmployee.getEmail());
+        userAccountStateService.syncUserStateForEmployee(savedEmployee.getEmployeeId());
 
         return EmployeeMapper.entityToDto(savedEmployee);
     }
@@ -112,7 +112,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         Branch branch = branchRepository.findByBranchCode(employeeDto.getBranchCode())
                 .orElseThrow(() -> new ResourceNotFoundException("Branch not found"));
 
-        String previousEmail = employee.getEmail();
         employee.setFirstName(employeeDto.getFirstName());
         employee.setLastName(employeeDto.getLastName());
         employee.setEmail(employeeDto.getEmail());
@@ -122,8 +121,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setBranch(branch);
 
         Employee savedEmployee = employeeRepository.save(employee);
-        userAccountStateService.syncUserState(previousEmail);
-        userAccountStateService.syncUserState(savedEmployee.getEmail());
+        userAccountStateService.syncUserStateForEmployee(savedEmployee.getEmployeeId());
 
         return EmployeeMapper.entityToDto(savedEmployee);
     }
@@ -135,7 +133,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
         employee.setStatus(EmployeeStatus.TERMINATED);
         Employee savedEmployee = employeeRepository.save(employee);
-        userAccountStateService.syncUserState(savedEmployee.getEmail());
+        userAccountStateService.syncUserStateForEmployee(savedEmployee.getEmployeeId());
     }
 
     @Override

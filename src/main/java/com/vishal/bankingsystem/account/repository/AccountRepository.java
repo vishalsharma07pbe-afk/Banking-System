@@ -12,5 +12,5 @@ public interface AccountRepository extends JpaRepository<AccountEntity, Long> {
     Optional<AccountEntity> findByAccountNumber(String accountNumber);
     List<AccountEntity> findByStatus(AccountStatus status);
     List<AccountEntity> findByBalanceBetween(BigDecimal min, BigDecimal max);
-    List<AccountEntity> findByCustomerEmail(String email);
+    List<AccountEntity> findByCustomerCustomerId(Long customerId);
 }

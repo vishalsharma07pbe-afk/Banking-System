@@ -7,10 +7,9 @@ import com.vishal.bankingsystem.auth.entity.UserEntity;
 import com.vishal.bankingsystem.auth.repository.UserRepository;
 import com.vishal.bankingsystem.customer.entity.Customer;
 import com.vishal.bankingsystem.customer.enums.CustomerStatus;
-import com.vishal.bankingsystem.customer.repository.CustomerRepository;
 import com.vishal.bankingsystem.employee.entity.Employee;
 import com.vishal.bankingsystem.employee.enums.EmployeeStatus;
-import com.vishal.bankingsystem.employee.repository.EmployeeRepository;
+import com.vishal.bankingsystem.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -23,87 +22,103 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserAccountStateService {
     private final UserRepository userRepository;
-    private final CustomerRepository customerRepository;
-    private final EmployeeRepository employeeRepository;
     private final AccountRepository accountRepository;
 
     @Transactional
     public UserEntity syncUserState(String username) {
-        UserEntity user = userRepository.findByUserName(username).orElse(null);
-        if (user == null) {
-            return null;
+        return userRepository.findByUserName(username)
+                .map(this::evaluateUserState)
+                .orElse(null);
+    }
+
+    @Transactional
+    public void syncUserStateByUserId(Long userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found for id: " + userId));
+        evaluateUserState(user);
+    }
+
+    @Transactional
+    public void syncUserStateForCustomer(Long customerId) {
+        UserEntity user = userRepository.findByCustomer_CustomerId(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not linked to customer id: " + customerId));
+        evaluateUserState(user);
+    }
+
+    @Transactional
+    public void syncUserStateForEmployee(Long employeeId) {
+        UserEntity user = userRepository.findByEmployee_EmployeeId(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not linked to employee id: " + employeeId));
+        evaluateUserState(user);
+    }
+
+    private UserEntity evaluateUserState(UserEntity user) {
+        if (user.getCustomer() != null) {
+            return userRepository.save(evaluateCustomerState(user, user.getCustomer()));
         }
 
+        if (user.getEmployee() != null) {
+            return userRepository.save(evaluateEmployeeState(user, user.getEmployee()));
+        }
+
+        throw new IllegalStateException("User must be linked to exactly one identity");
+    }
+
+    private UserEntity evaluateCustomerState(UserEntity user, Customer customer) {
+        boolean shouldDisable = customer.getStatus() == CustomerStatus.INACTIVE;
+        boolean shouldLock = customer.getStatus() == CustomerStatus.BLOCKED;
+
+        List<AccountEntity> accounts = accountRepository.findByCustomerCustomerId(customer.getCustomerId());
+        if (!accounts.isEmpty()) {
+            boolean hasActiveAccount = accounts.stream()
+                    .anyMatch(account -> account.getStatus() == AccountStatus.ACTIVE);
+            boolean hasBlockedAccount = accounts.stream()
+                    .anyMatch(account -> account.getStatus() == AccountStatus.BLOCKED);
+            boolean allClosed = accounts.stream()
+                    .allMatch(account -> account.getStatus() == AccountStatus.CLOSED);
+
+            if (!hasActiveAccount && hasBlockedAccount) {
+                shouldLock = true;
+            }
+            if (allClosed) {
+                shouldDisable = true;
+            }
+        }
+
+        applyUserState(user, shouldDisable, shouldLock);
+        return user;
+    }
+
+    private UserEntity evaluateEmployeeState(UserEntity user, Employee employee) {
         boolean shouldDisable = false;
         boolean shouldLock = false;
-        LocalDate today = LocalDate.now();
 
-        Customer customer = resolveCustomer(user, username);
-        if (customer != null) {
-            if (customer.getStatus() == CustomerStatus.INACTIVE) {
-                shouldDisable = true;
-            }
-            if (customer.getStatus() == CustomerStatus.BLOCKED) {
-                shouldLock = true;
-            }
-
-            List<AccountEntity> accounts = accountRepository.findByCustomerEmail(username);
-            if (!accounts.isEmpty()) {
-                boolean hasActiveAccount = accounts.stream()
-                        .anyMatch(account -> account.getStatus() == AccountStatus.ACTIVE);
-                boolean hasBlockedAccount = accounts.stream()
-                        .anyMatch(account -> account.getStatus() == AccountStatus.BLOCKED);
-                boolean allClosed = accounts.stream()
-                        .allMatch(account -> account.getStatus() == AccountStatus.CLOSED);
-
-                if (!hasActiveAccount && hasBlockedAccount) {
-                    shouldLock = true;
-                }
-                if (allClosed) {
-                    shouldDisable = true;
-                }
-            }
+        if (employee.getStatus() == EmployeeStatus.TERMINATED) {
+            shouldDisable = true;
+            shouldLock = true;
         }
 
-        Employee employee = resolveEmployee(user, username);
-        if (employee != null) {
-            if (employee.getStatus() == EmployeeStatus.TERMINATED) {
-                shouldDisable = true;
-                shouldLock = true;
-            }
-            if (employee.getStatus() == EmployeeStatus.ON_LEAVE
-                    || employee.getStatus() == EmployeeStatus.SUSPENDED) {
-                shouldLock = true;
-            }
+        if (employee.getStatus() == EmployeeStatus.ON_LEAVE
+                || employee.getStatus() == EmployeeStatus.SUSPENDED) {
+            shouldLock = true;
         }
 
+        applyUserState(user, shouldDisable, shouldLock);
+        return user;
+    }
+
+    private void applyUserState(UserEntity user, boolean shouldDisable, boolean shouldLock) {
         user.setEnabled(!shouldDisable);
         user.setAccountLocked(shouldLock);
         if (shouldDisable) {
-            user.setAccountExpiryDate(today);
+            user.setAccountExpiryDate(LocalDate.now());
         }
-
-        return userRepository.save(user);
-    }
-
-    private Customer resolveCustomer(UserEntity user, String username) {
-        if (user.getCustomer() != null) {
-            return user.getCustomer();
-        }
-        return customerRepository.findByEmail(username).orElse(null);
-    }
-
-    private Employee resolveEmployee(UserEntity user, String username) {
-        if (user.getEmployee() != null) {
-            return user.getEmployee();
-        }
-        return employeeRepository.findByEmail(username).orElse(null);
     }
 
     @Transactional
     @Scheduled(cron = "${app.security.auth-state-sync-cron:0 0 * * * *}")
     public void syncAllUsers() {
         userRepository.findAll()
-                .forEach(user -> syncUserState(user.getUserName()));
+                .forEach(this::evaluateUserState);
     }
 }

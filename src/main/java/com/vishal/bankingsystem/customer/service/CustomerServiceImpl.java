@@ -50,7 +50,7 @@ public class CustomerServiceImpl implements CustomerService {
         customer.setStatus(customerDto.getStatus() == null ? CustomerStatus.ACTIVE : customerDto.getStatus());
 
         Customer saved = customerRepository.save(customer);
-        userAccountStateService.syncUserState(saved.getEmail());
+        userAccountStateService.syncUserStateForCustomer(saved.getCustomerId());
         return CustomerMapper.entityToDto(saved);
     }
 
@@ -76,7 +76,7 @@ public class CustomerServiceImpl implements CustomerService {
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
         customer.setStatus(CustomerStatus.INACTIVE);
         Customer savedCustomer = customerRepository.save(customer);
-        userAccountStateService.syncUserState(savedCustomer.getEmail());
+        userAccountStateService.syncUserStateForCustomer(savedCustomer.getCustomerId());
     }
 
     @Override

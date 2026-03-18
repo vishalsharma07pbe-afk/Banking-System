@@ -68,6 +68,8 @@ public class UserEntity {
     @PrePersist
     @PreUpdate
     void applyDefaults() {
+        validateLinkedIdentity();
+
         if (accountExpiryDate == null) {
             accountExpiryDate = LocalDate.now().plusYears(1);
         }
@@ -76,6 +78,15 @@ public class UserEntity {
         }
         if (passwordExpiryDate == null) {
             passwordExpiryDate = passwordChangedAt.plusMonths(6);
+        }
+    }
+
+    private void validateLinkedIdentity() {
+        boolean hasCustomer = customer != null;
+        boolean hasEmployee = employee != null;
+
+        if (hasCustomer == hasEmployee) {
+            throw new IllegalStateException("User must be linked to exactly one identity: customer or employee");
         }
     }
 }
