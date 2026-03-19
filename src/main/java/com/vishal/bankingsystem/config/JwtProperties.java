@@ -18,4 +18,7 @@ public class JwtProperties {
 
     @Min(1)
     private long expirationMinutes = 600;
+
+    @Min(1)
+    private long refreshTokenDays = 7;
 }

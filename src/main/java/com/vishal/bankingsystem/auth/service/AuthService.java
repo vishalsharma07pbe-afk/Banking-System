@@ -1,8 +1,10 @@
 package com.vishal.bankingsystem.auth.service;
 
+import com.vishal.bankingsystem.auth.dto.AuthResponse;
 import com.vishal.bankingsystem.auth.dto.ChangePasswordRequest;
 import com.vishal.bankingsystem.auth.dto.LoginRequest;
 import com.vishal.bankingsystem.auth.entity.UserEntity;
+import com.vishal.bankingsystem.auth.entity.UserSession;
 import com.vishal.bankingsystem.auth.repository.UserRepository;
 import com.vishal.bankingsystem.config.SecurityPolicyProperties;
 import com.vishal.bankingsystem.exception.BadRequestException;
@@ -29,17 +31,15 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserAccountStateService userAccountStateService;
     private final SecurityPolicyProperties securityPolicyProperties;
+    private final SessionService sessionService;
 
     @Transactional
-    public String login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request, String ipAddress, String deviceInfo) {
         String username = normalize(request.getUserName());
         UserEntity user = getUser(username);
 
         refreshAutomaticState(user);
-        user = userAccountStateService.syncUserState(username);
-        if (user == null) {
-            throw new UnauthorizedException("Invalid username or password");
-        }
+        user = syncUserState(user);
         ensureLoginAllowed(user);
 
         try {
@@ -54,7 +54,8 @@ public class AuthService {
         }
 
         clearLoginFailures(user);
-        return jwtService.generateToken(username);
+        String refreshToken = sessionService.createSession(username, ipAddress, deviceInfo);
+        return new AuthResponse(jwtService.generateToken(username), refreshToken);
     }
 
     @Transactional
@@ -63,10 +64,7 @@ public class AuthService {
         UserEntity user = getUser(username);
 
         refreshAutomaticState(user);
-        user = userAccountStateService.syncUserState(username);
-        if (user == null) {
-            throw new UnauthorizedException("Invalid username or password");
-        }
+        user = syncUserState(user);
 
         if (!user.isEnabled()) {
             throw new UnauthorizedException("Account is disabled");
@@ -96,8 +94,24 @@ public class AuthService {
         user.setPasswordChangedAt(today);
         user.setPasswordExpiryDate(today.plusMonths(securityPolicyProperties.getPasswordExpiryMonths()));
         clearLoginFailures(user);
+        sessionService.logoutAll(user);
 
         return "Password updated successfully";
+    }
+
+    @Transactional
+    public AuthResponse refreshSession(String refreshToken) {
+        return sessionService.refresh(refreshToken);
+    }
+
+    @Transactional
+    public void logout(String refreshToken) {
+        sessionService.logout(refreshToken);
+    }
+
+    @Transactional
+    public void logoutAll(String username) {
+        sessionService.logoutAll(username);
     }
 
     private UserEntity getUser(String username) {
@@ -107,6 +121,14 @@ public class AuthService {
 
     private String normalize(String userName) {
         return userName == null ? "" : userName.trim();
+    }
+
+    private UserEntity syncUserState(UserEntity user) {
+        UserEntity syncedUser = userAccountStateService.syncUserState(user.getUserName());
+        if (syncedUser == null) {
+            throw new UnauthorizedException("Invalid username or password");
+        }
+        return syncedUser;
     }
 
     private void ensureLoginAllowed(UserEntity user) {

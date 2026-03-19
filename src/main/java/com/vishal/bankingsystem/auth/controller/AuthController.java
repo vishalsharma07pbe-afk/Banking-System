@@ -1,10 +1,17 @@
 package com.vishal.bankingsystem.auth.controller;
 
+import com.vishal.bankingsystem.auth.dto.AuthResponse;
 import com.vishal.bankingsystem.auth.dto.ChangePasswordRequest;
 import com.vishal.bankingsystem.auth.dto.LoginRequest;
+import com.vishal.bankingsystem.auth.dto.LogoutRequest;
+import com.vishal.bankingsystem.auth.dto.RefreshTokenRequest;
 import com.vishal.bankingsystem.auth.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,8 +25,31 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/sessions")
-    public ResponseEntity<String> createSession(@RequestBody LoginRequest request){
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<AuthResponse> createSession(@RequestBody LoginRequest request,
+                                                      HttpServletRequest httpRequest){
+        return ResponseEntity.ok(authService.login(
+                request,
+                httpRequest.getRemoteAddr(),
+                httpRequest.getHeader("User-Agent")
+        ));
+    }
+
+    @PostMapping("/sessions/refresh")
+    public ResponseEntity<AuthResponse> refreshSession(@RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refreshSession(request.getRefreshToken()));
+    }
+
+    @DeleteMapping("/sessions")
+    public ResponseEntity<Void> logout(@RequestBody LogoutRequest request) {
+        authService.logout(request.getRefreshToken());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @DeleteMapping("/sessions/all")
+    public ResponseEntity<Void> logoutAll(Authentication authentication) {
+        authService.logoutAll(authentication.getName());
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/password")
