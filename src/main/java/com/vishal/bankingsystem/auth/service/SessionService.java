@@ -138,6 +138,9 @@ public class SessionService {
         if (!user.isEnabled()) {
             throw new UnauthorizedException("Account is disabled");
         }
+        if (user.isAdminUnlockRequired()) {
+            throw new UnauthorizedException("Account is locked until an admin unlocks it");
+        }
         if (user.isAccountLocked()) {
             throw new UnauthorizedException("Account is locked");
         }

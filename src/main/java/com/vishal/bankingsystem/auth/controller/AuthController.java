@@ -5,6 +5,7 @@ import com.vishal.bankingsystem.auth.dto.ChangePasswordRequest;
 import com.vishal.bankingsystem.auth.dto.LoginRequest;
 import com.vishal.bankingsystem.auth.dto.LogoutRequest;
 import com.vishal.bankingsystem.auth.dto.RefreshTokenRequest;
+import com.vishal.bankingsystem.auth.dto.UnlockUserRequest;
 import com.vishal.bankingsystem.auth.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -55,5 +56,11 @@ public class AuthController {
     @PutMapping("/password")
     public ResponseEntity<String> updatePassword(@RequestBody ChangePasswordRequest request) {
         return ResponseEntity.ok(authService.changePassword(request));
+    }
+
+    @PreAuthorize("hasAuthority('UNLOCK_ACCOUNT')")
+    @PostMapping("/users/unlock")
+    public ResponseEntity<String> unlockUser(@RequestBody UnlockUserRequest request) {
+        return ResponseEntity.ok(authService.unlockUser(request.getUserName()));
     }
 }

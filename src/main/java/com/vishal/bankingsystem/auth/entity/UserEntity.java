@@ -40,6 +40,12 @@ public class UserEntity {
     private LocalDateTime lockUntil;
 
     @Column(nullable = false)
+    private boolean postLockChallengeRequired = false;
+
+    @Column(nullable = false)
+    private boolean adminUnlockRequired = false;
+
+    @Column(nullable = false)
     private LocalDate accountExpiryDate;
 
     @Column(nullable = false)

@@ -78,6 +78,7 @@ export JWT_SECRET='replace-with-a-long-random-secret'
 Application default port: `9090`
 
 ## API Base Paths
+- Auth: `/api/auth`
 - Account: `/api/account`
 - Customer: `/api/customers`
 - Employee: `/api/employees`
@@ -100,6 +101,14 @@ Application default port: `9090`
 - `POST /api/account/number/{accountNumber}/withdraw?amount={amount}`
 - `POST /api/account/transfer`
 - `POST /api/account/number/{accountNumber}/transactionhistory`
+
+### Auth
+- `POST /api/auth/sessions`
+- `POST /api/auth/sessions/refresh`
+- `DELETE /api/auth/sessions`
+- `DELETE /api/auth/sessions/all`
+- `PUT /api/auth/password`
+- `POST /api/auth/users/unlock`
 
 ### Customer
 - `POST /api/customers`
@@ -134,7 +143,8 @@ After app startup, check:
 
 ## Notes
 - JWT signing is configured from the `JWT_SECRET` environment variable rather than a hardcoded source value.
-- Password expiry and temporary lockout are maintained automatically from the authentication flow.
+- Password expiry is maintained automatically from the authentication flow.
+- Failed logins now escalate in two stages: temporary lock after the configured threshold, then permanent login lock after the next wrong attempt once that temporary lock has expired. Permanent auth locks require an admin with `UNLOCK_ACCOUNT` to clear them.
 - `transaction/controller/TransactionController` is currently a placeholder.
 - Current tests are basic (`contextLoads`); more feature-level tests are recommended.
 

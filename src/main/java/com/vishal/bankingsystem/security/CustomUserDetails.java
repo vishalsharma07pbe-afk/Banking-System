@@ -76,7 +76,8 @@ public class CustomUserDetails implements UserDetails {
     // Account lock check
     @Override
     public boolean isAccountNonLocked() {
-        return !users.isAccountLocked()
+        return !users.isAdminUnlockRequired()
+                && !users.isAccountLocked()
                 && (users.getLockUntil() == null || !users.getLockUntil().isAfter(LocalDateTime.now()));
     }
 

@@ -33,7 +33,7 @@ public class AuthService {
     private final SecurityPolicyProperties securityPolicyProperties;
     private final SessionService sessionService;
 
-    @Transactional
+    @Transactional(noRollbackFor = UnauthorizedException.class)
     public AuthResponse login(LoginRequest request, String ipAddress, String deviceInfo) {
         String username = normalize(request.getUserName());
         UserEntity user = getUser(username);
@@ -58,7 +58,7 @@ public class AuthService {
         return new AuthResponse(jwtService.generateToken(username), refreshToken);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = UnauthorizedException.class)
     public String changePassword(ChangePasswordRequest request) {
         String username = normalize(request.getUserName());
         UserEntity user = getUser(username);
@@ -68,6 +68,9 @@ public class AuthService {
 
         if (!user.isEnabled()) {
             throw new UnauthorizedException("Account is disabled");
+        }
+        if (user.isAdminUnlockRequired()) {
+            throw new UnauthorizedException("Account is locked until an admin unlocks it");
         }
         if (user.isAccountLocked()) {
             throw new UnauthorizedException("Account is locked. Contact support");
@@ -114,6 +117,14 @@ public class AuthService {
         sessionService.logoutAll(username);
     }
 
+    @Transactional
+    public String unlockUser(String username) {
+        UserEntity user = getUser(normalize(username));
+        clearLoginFailures(user);
+        user.setAdminUnlockRequired(false);
+        return "User unlocked successfully";
+    }
+
     private UserEntity getUser(String username) {
         return userRepository.findByUserName(username)
                 .orElseThrow(() -> new UnauthorizedException("Invalid username or password"));
@@ -134,6 +145,9 @@ public class AuthService {
     private void ensureLoginAllowed(UserEntity user) {
         if (!user.isEnabled()) {
             throw new UnauthorizedException("Account is disabled");
+        }
+        if (user.isAdminUnlockRequired()) {
+            throw new UnauthorizedException("Account is locked until an admin unlocks it");
         }
         if (user.isAccountLocked()) {
             throw new UnauthorizedException("Account is locked. Contact support");
@@ -157,17 +171,26 @@ public class AuthService {
     }
 
     private void registerFailedAttempt(UserEntity user) {
+        if (user.isPostLockChallengeRequired() && !isTemporarilyLocked(user)) {
+            user.setAdminUnlockRequired(true);
+            user.setFailedLoginAttempts(securityPolicyProperties.getMaxFailedLoginAttempts());
+            user.setLockUntil(null);
+            return;
+        }
+
         int failedAttempts = user.getFailedLoginAttempts() + 1;
         user.setFailedLoginAttempts(failedAttempts);
 
         if (failedAttempts >= securityPolicyProperties.getMaxFailedLoginAttempts()) {
             user.setLockUntil(LocalDateTime.now().plusMinutes(securityPolicyProperties.getLockDurationMinutes()));
+            user.setPostLockChallengeRequired(true);
         }
     }
 
     private void clearLoginFailures(UserEntity user) {
         user.setFailedLoginAttempts(0);
         user.setLockUntil(null);
+        user.setPostLockChallengeRequired(false);
     }
 
     private boolean isTemporarilyLocked(UserEntity user) {
@@ -183,6 +206,9 @@ public class AuthService {
     }
 
     private String buildInvalidCredentialsMessage(UserEntity user) {
+        if (user.isAdminUnlockRequired()) {
+            return "Account is locked until an admin unlocks it";
+        }
         if (isTemporarilyLocked(user)) {
             return "Account is temporarily locked until " + user.getLockUntil();
         }
@@ -193,6 +219,9 @@ public class AuthService {
     }
 
     private String resolveAuthenticationMessage(UserEntity user, AuthenticationException ex) {
+        if (user.isAdminUnlockRequired()) {
+            return "Account is locked until an admin unlocks it";
+        }
         if (isTemporarilyLocked(user)) {
             return "Account is temporarily locked until " + user.getLockUntil();
         }
