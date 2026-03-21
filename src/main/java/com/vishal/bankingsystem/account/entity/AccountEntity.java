@@ -8,6 +8,10 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 @Entity
+@Table(
+        name = "account_entity",
+        uniqueConstraints = @UniqueConstraint(name = "uk_account_customer_type", columnNames = {"customer_id", "account_type"})
+)
 public class AccountEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

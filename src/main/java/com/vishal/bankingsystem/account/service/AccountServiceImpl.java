@@ -1,50 +1,75 @@
 package com.vishal.bankingsystem.account.service;
-import com.vishal.bankingsystem.account.enums.AccountStatus;
+
 import com.vishal.bankingsystem.account.dto.AccountDto;
+import com.vishal.bankingsystem.account.enums.AccountStatus;
+import com.vishal.bankingsystem.account.enums.AccountType;
 import com.vishal.bankingsystem.account.entity.AccountEntity;
-import com.vishal.bankingsystem.auth.service.UserAccountStateService;
-import com.vishal.bankingsystem.account.repository.AccountRepository;
 import com.vishal.bankingsystem.account.mapper.AccountMapper;
+import com.vishal.bankingsystem.account.repository.AccountRepository;
+import com.vishal.bankingsystem.auth.entity.PermissionEntity;
+import com.vishal.bankingsystem.auth.entity.RoleEntity;
+import com.vishal.bankingsystem.auth.entity.UserEntity;
+import com.vishal.bankingsystem.auth.repository.PermissionRepository;
+import com.vishal.bankingsystem.auth.repository.RoleRepository;
+import com.vishal.bankingsystem.auth.repository.UserRepository;
+import com.vishal.bankingsystem.auth.service.UserAccountStateService;
 import com.vishal.bankingsystem.branch.entity.Branch;
 import com.vishal.bankingsystem.branch.repository.BranchRepository;
 import com.vishal.bankingsystem.customer.entity.Customer;
+import com.vishal.bankingsystem.customer.repository.CustomerRepository;
 import com.vishal.bankingsystem.exception.BadRequestException;
 import com.vishal.bankingsystem.exception.ConflictException;
 import com.vishal.bankingsystem.exception.ResourceNotFoundException;
-import com.vishal.bankingsystem.transaction.repository.TransactionRepository;
-import org.springframework.stereotype.Service;
-import com.vishal.bankingsystem.customer.repository.CustomerRepository;
-import org.springframework.transaction.annotation.Transactional;
-import com.vishal.bankingsystem.transaction.entity.Transaction;
-import com.vishal.bankingsystem.transaction.enums.TransactionType;
-import com.vishal.bankingsystem.transaction.enums.TransactionStatus;
+import com.vishal.bankingsystem.exception.UnauthorizedException;
 import com.vishal.bankingsystem.transaction.dto.TransactionDto;
+import com.vishal.bankingsystem.transaction.entity.Transaction;
+import com.vishal.bankingsystem.transaction.enums.TransactionStatus;
+import com.vishal.bankingsystem.transaction.enums.TransactionType;
 import com.vishal.bankingsystem.transaction.mapper.TransactionMapper;
+import com.vishal.bankingsystem.transaction.repository.TransactionRepository;
 import com.vishal.bankingsystem.transaction.request.TransferRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public class AccountServiceImpl implements AccountService{
+public class AccountServiceImpl implements AccountService {
+    private static final String PRECUSTOMER_ROLE = "PRECUSTOMER";
+    private static final String CUSTOMER_ROLE = "CUSTOMER";
+
     public final AccountRepository accountRepository;
     public final CustomerRepository customerRepository;
     public final BranchRepository branchRepository;
     private final TransactionRepository transactionRepository;
     private final UserAccountStateService userAccountStateService;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PermissionRepository permissionRepository;
 
     public AccountServiceImpl(AccountRepository accountRepository,
                               CustomerRepository customerRepository,
                               BranchRepository branchRepository,
                               TransactionRepository transactionRepository,
-                              UserAccountStateService userAccountStateService) {
+                              UserAccountStateService userAccountStateService,
+                              UserRepository userRepository,
+                              RoleRepository roleRepository,
+                              PermissionRepository permissionRepository) {
         this.accountRepository = accountRepository;
         this.customerRepository = customerRepository;
         this.branchRepository = branchRepository;
         this.transactionRepository = transactionRepository;
         this.userAccountStateService = userAccountStateService;
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.permissionRepository = permissionRepository;
     }
 
     private String generateReferenceNumber() {
@@ -90,6 +115,9 @@ public class AccountServiceImpl implements AccountService{
 
     @Override
     public AccountDto createAccount(AccountDto accountDto) {
+        ensureCustomerOwnsRequestedAccount(accountDto.getCustomerId());
+        ensureUniqueAccountType(accountDto.getCustomerId(), accountDto.getAccountType());
+
         Customer customer = customerRepository.findById(accountDto.getCustomerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
         Branch branch = branchRepository.findById(accountDto.getBranchId())
@@ -100,6 +128,7 @@ public class AccountServiceImpl implements AccountService{
         account.setStatus(AccountStatus.ACTIVE); // default
         AccountEntity savedAccount = accountRepository.save(account);
         userAccountStateService.syncUserStateForCustomer(savedAccount.getCustomer().getCustomerId());
+        promoteCustomerAfterFirstAccount(savedAccount.getCustomer().getCustomerId());
         return AccountMapper.entityToDto(savedAccount);
     }
 
@@ -107,6 +136,9 @@ public class AccountServiceImpl implements AccountService{
     public AccountDto updateAccount(String accountNumber, AccountDto accountDto) {
         AccountEntity account = accountRepository.findByAccountNumber(accountNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+        if (account.getAccountType() != accountDto.getAccountType()) {
+            ensureUniqueAccountType(account.getCustomer().getCustomerId(), accountDto.getAccountType());
+        }
         account.setAccountType(accountDto.getAccountType());
         account.setStatus(accountDto.getStatus());
         AccountEntity savedAccount = accountRepository.save(account);
@@ -280,6 +312,63 @@ public class AccountServiceImpl implements AccountService{
                 fromAccount,
                 toAccount
         );
+    }
+
+    private void ensureCustomerOwnsRequestedAccount(Long customerId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return;
+        }
+
+        UserEntity currentUser = userRepository.findByUserName(authentication.getName())
+                .orElseThrow(() -> new UnauthorizedException("Authenticated user not found"));
+        if (currentUser.getCustomer() != null
+                && !currentUser.getCustomer().getCustomerId().equals(customerId)) {
+            throw new UnauthorizedException("You can create accounts only for your own customer profile");
+        }
+    }
+
+    private void ensureUniqueAccountType(Long customerId, AccountType accountType) {
+        if (accountRepository.existsByCustomerCustomerIdAndAccountType(customerId, accountType)) {
+            throw new ConflictException("Customer already has a " + accountType + " account");
+        }
+    }
+
+    private void promoteCustomerAfterFirstAccount(Long customerId) {
+        UserEntity user = userRepository.findByCustomer_CustomerId(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not linked to customer id: " + customerId));
+
+        Set<RoleEntity> roles = new LinkedHashSet<>(user.getRoles());
+        roles.removeIf(role -> role != null && PRECUSTOMER_ROLE.equals(role.getName()));
+        roles.add(getOrCreateRole(CUSTOMER_ROLE));
+        user.setRoles(roles);
+        userRepository.save(user);
+    }
+
+    private RoleEntity getOrCreateRole(String roleName) {
+        return roleRepository.findByName(roleName)
+                .orElseGet(() -> {
+                    RoleEntity role = new RoleEntity();
+                    role.setName(roleName);
+                    role.setPermissions(resolveDefaultPermissions(roleName));
+                    return roleRepository.save(role);
+                });
+    }
+
+    private Set<PermissionEntity> resolveDefaultPermissions(String roleName) {
+        Set<String> permissionNames = switch (roleName) {
+            case PRECUSTOMER_ROLE -> Set.of("CREATE_ACCOUNT");
+            case CUSTOMER_ROLE -> Set.of("CREATE_ACCOUNT", "VIEW_ACCOUNT", "TRANSFER", "VIEW_TRANSACTION_HISTORY");
+            default -> Set.of();
+        };
+
+        Set<PermissionEntity> permissions = new LinkedHashSet<>();
+        for (String permissionName : permissionNames) {
+            PermissionEntity permission = permissionRepository.findByName(permissionName)
+                    .orElseGet(() -> permissionRepository.save(new PermissionEntity(null, permissionName)));
+            permissions.add(permission);
+        }
+        return permissions;
     }
 
 }

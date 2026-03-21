@@ -2,12 +2,14 @@ package com.vishal.bankingsystem.auth.controller;
 
 import com.vishal.bankingsystem.auth.dto.AuthResponse;
 import com.vishal.bankingsystem.auth.dto.ChangePasswordRequest;
+import com.vishal.bankingsystem.auth.dto.CustomerSignupRequest;
 import com.vishal.bankingsystem.auth.dto.LoginRequest;
 import com.vishal.bankingsystem.auth.dto.LogoutRequest;
 import com.vishal.bankingsystem.auth.dto.RefreshTokenRequest;
 import com.vishal.bankingsystem.auth.dto.UnlockUserRequest;
 import com.vishal.bankingsystem.auth.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +26,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+
+    @PostMapping("/signup")
+    public ResponseEntity<AuthResponse> signup(@Valid @RequestBody CustomerSignupRequest request,
+                                               HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(authService.registerCustomer(
+                request,
+                httpRequest.getRemoteAddr(),
+                httpRequest.getHeader("User-Agent")
+        ));
+    }
 
     @PostMapping("/sessions")
     public ResponseEntity<AuthResponse> createSession(@RequestBody LoginRequest request,
