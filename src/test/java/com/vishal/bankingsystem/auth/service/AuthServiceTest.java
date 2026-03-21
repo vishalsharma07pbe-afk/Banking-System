@@ -1,13 +1,17 @@
 package com.vishal.bankingsystem.auth.service;
 
 import com.vishal.bankingsystem.auth.dto.AuthResponse;
+import com.vishal.bankingsystem.auth.dto.CustomerSignupRequest;
 import com.vishal.bankingsystem.auth.dto.LoginRequest;
+import com.vishal.bankingsystem.auth.entity.RoleEntity;
 import com.vishal.bankingsystem.auth.entity.UserEntity;
+import com.vishal.bankingsystem.auth.repository.RoleRepository;
 import com.vishal.bankingsystem.auth.repository.UserRepository;
 import com.vishal.bankingsystem.auth.repository.UserSessionRepository;
 import com.vishal.bankingsystem.config.SecurityPolicyProperties;
 import com.vishal.bankingsystem.customer.entity.Customer;
 import com.vishal.bankingsystem.customer.repository.CustomerRepository;
+import com.vishal.bankingsystem.exception.ConflictException;
 import com.vishal.bankingsystem.exception.UnauthorizedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +41,9 @@ class AuthServiceTest {
     private CustomerRepository customerRepository;
 
     @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
     private UserSessionRepository userSessionRepository;
 
     @Autowired
@@ -50,6 +57,37 @@ class AuthServiceTest {
         userSessionRepository.deleteAll();
         userRepository.deleteAll();
         customerRepository.deleteAll();
+        roleRepository.deleteAll();
+    }
+
+    @Test
+    void registerCustomerCreatesLoginOnlyUserAndSession() {
+        AuthResponse response = authService.registerCustomer(signupRequest("fresh-user", "fresh@example.com"), "127.0.0.1", "test");
+
+        UserEntity user = userRepository.findByUserName("fresh-user").orElseThrow();
+        Customer customer = customerRepository.findById(user.getCustomer().getCustomerId()).orElseThrow();
+        RoleEntity role = user.getRoles().stream().findFirst().orElseThrow();
+
+        assertNotNull(response.getAccessToken());
+        assertNotNull(response.getRefreshToken());
+        assertNotNull(customer);
+        assertTrue(customer.getCustomerNumber().startsWith("CUST-"));
+        assertEquals("PRECUSTOMER", role.getName());
+        assertEquals(1, role.getPermissions().size());
+        assertTrue(role.getPermissions().stream().anyMatch(permission -> "CREATE_ACCOUNT".equals(permission.getName())));
+        assertFalse(userSessionRepository.findByUser(user).isEmpty());
+    }
+
+    @Test
+    void registerCustomerRejectsDuplicateUsername() {
+        authService.registerCustomer(signupRequest("fresh-user", "fresh@example.com"), "127.0.0.1", "test");
+
+        ConflictException exception = assertThrows(
+                ConflictException.class,
+                () -> authService.registerCustomer(signupRequest("fresh-user", "other@example.com"), "127.0.0.1", "test")
+        );
+
+        assertEquals("Username already exists", exception.getMessage());
     }
 
     @Test
@@ -143,6 +181,22 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest();
         request.setUserName(userName);
         request.setPassword(password);
+        return request;
+    }
+
+    private static CustomerSignupRequest signupRequest(String userName, String email) {
+        CustomerSignupRequest request = new CustomerSignupRequest();
+        request.setUserName(userName);
+        request.setPassword("Correct@123");
+        request.setFirstName("Fresh");
+        request.setLastName("User");
+        request.setEmail(email);
+        request.setPhoneNumber("9999999999");
+        request.setAddressLine1("Address 1");
+        request.setCity("City");
+        request.setState("State");
+        request.setCountry("India");
+        request.setPostalCode("123456");
         return request;
     }
 }

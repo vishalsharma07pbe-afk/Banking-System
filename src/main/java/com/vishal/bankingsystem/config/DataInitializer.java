@@ -5,6 +5,7 @@ import com.vishal.bankingsystem.auth.entity.RoleEntity;
 import com.vishal.bankingsystem.auth.repository.PermissionRepository;
 import com.vishal.bankingsystem.auth.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Set;
 
 @Component
+@ConditionalOnProperty(name = "app.bootstrap.rbac.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
     private final PermissionRepository permissionRepository;
@@ -49,7 +51,11 @@ public class DataInitializer implements CommandLineRunner {
         //Roles
         RoleEntity customer = new RoleEntity();
         customer.setName("CUSTOMER");
-        customer.setPermissions(Set.of(viewAccount, transfer, viewTransactions));
+        customer.setPermissions(Set.of(createAccount, viewAccount, transfer, viewTransactions));
+
+        RoleEntity preCustomer = new RoleEntity();
+        preCustomer.setName("PRECUSTOMER");
+        preCustomer.setPermissions(Set.of(createAccount));
 
         RoleEntity corporateCustomer = new RoleEntity();
         corporateCustomer.setName("CORPORATE_CUSTOMER");
@@ -94,6 +100,7 @@ public class DataInitializer implements CommandLineRunner {
 
         roleRepository.saveAll(List.of(
                 customer,
+                preCustomer,
                 corporateCustomer,
                 teller,
                 branchManager,

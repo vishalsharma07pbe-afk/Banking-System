@@ -2,12 +2,21 @@ package com.vishal.bankingsystem.auth.service;
 
 import com.vishal.bankingsystem.auth.dto.AuthResponse;
 import com.vishal.bankingsystem.auth.dto.ChangePasswordRequest;
+import com.vishal.bankingsystem.auth.dto.CustomerSignupRequest;
+import com.vishal.bankingsystem.auth.entity.PermissionEntity;
 import com.vishal.bankingsystem.auth.dto.LoginRequest;
+import com.vishal.bankingsystem.auth.entity.RoleEntity;
 import com.vishal.bankingsystem.auth.entity.UserEntity;
 import com.vishal.bankingsystem.auth.entity.UserSession;
+import com.vishal.bankingsystem.auth.repository.PermissionRepository;
+import com.vishal.bankingsystem.auth.repository.RoleRepository;
 import com.vishal.bankingsystem.auth.repository.UserRepository;
 import com.vishal.bankingsystem.config.SecurityPolicyProperties;
+import com.vishal.bankingsystem.customer.entity.Customer;
+import com.vishal.bankingsystem.customer.enums.CustomerStatus;
+import com.vishal.bankingsystem.customer.repository.CustomerRepository;
 import com.vishal.bankingsystem.exception.BadRequestException;
+import com.vishal.bankingsystem.exception.ConflictException;
 import com.vishal.bankingsystem.exception.UnauthorizedException;
 import com.vishal.bankingsystem.security.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -21,17 +30,65 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+    private static final String PRECUSTOMER_ROLE = "PRECUSTOMER";
+    private static final String CUSTOMER_ROLE = "CUSTOMER";
+
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final PermissionRepository permissionRepository;
+    private final RoleRepository roleRepository;
+    private final CustomerRepository customerRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserAccountStateService userAccountStateService;
     private final SecurityPolicyProperties securityPolicyProperties;
     private final SessionService sessionService;
+
+    @Transactional
+    public AuthResponse registerCustomer(CustomerSignupRequest request, String ipAddress, String deviceInfo) {
+        String username = normalize(request.getUserName());
+        if (username.isBlank()) {
+            throw new BadRequestException("Username is required");
+        }
+        if (userRepository.existsByUserName(username)) {
+            throw new ConflictException("Username already exists");
+        }
+        if (customerRepository.existsByEmail(request.getEmail())) {
+            throw new ConflictException("Email already exists");
+        }
+
+        Customer customer = new Customer();
+        customer.setCustomerNumber(generateCustomerNumber());
+        customer.setFirstName(request.getFirstName().trim());
+        customer.setLastName(trimToNull(request.getLastName()));
+        customer.setEmail(request.getEmail().trim());
+        customer.setPhoneNumber(request.getPhoneNumber().trim());
+        customer.setAddressLine1(request.getAddressLine1().trim());
+        customer.setAddressLine2(trimToNull(request.getAddressLine2()));
+        customer.setCity(request.getCity().trim());
+        customer.setState(request.getState().trim());
+        customer.setCountry(request.getCountry().trim());
+        customer.setPostalCode(request.getPostalCode().trim());
+        customer.setStatus(CustomerStatus.ACTIVE);
+        customer = customerRepository.save(customer);
+
+        UserEntity user = new UserEntity();
+        user.setUserName(username);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setCustomer(customer);
+        user.setRoles(Set.of(getOrCreateRole(PRECUSTOMER_ROLE)));
+        userRepository.save(user);
+
+        String refreshToken = sessionService.createSession(username, ipAddress, deviceInfo);
+        return new AuthResponse(jwtService.generateToken(username), refreshToken);
+    }
 
     @Transactional(noRollbackFor = UnauthorizedException.class)
     public AuthResponse login(LoginRequest request, String ipAddress, String deviceInfo) {
@@ -132,6 +189,48 @@ public class AuthService {
 
     private String normalize(String userName) {
         return userName == null ? "" : userName.trim();
+    }
+
+    private RoleEntity getOrCreateRole(String roleName) {
+        return roleRepository.findByName(roleName)
+                .orElseGet(() -> {
+                    RoleEntity role = new RoleEntity();
+                    role.setName(roleName);
+                    role.setPermissions(resolveDefaultPermissions(roleName));
+                    return roleRepository.save(role);
+                });
+    }
+
+    private Set<PermissionEntity> resolveDefaultPermissions(String roleName) {
+        Set<String> permissionNames = switch (roleName) {
+            case PRECUSTOMER_ROLE -> Set.of("CREATE_ACCOUNT");
+            case CUSTOMER_ROLE -> Set.of("CREATE_ACCOUNT", "VIEW_ACCOUNT", "TRANSFER", "VIEW_TRANSACTION_HISTORY");
+            default -> Set.of();
+        };
+
+        Set<PermissionEntity> permissions = new LinkedHashSet<>();
+        for (String permissionName : permissionNames) {
+            PermissionEntity permission = permissionRepository.findByName(permissionName)
+                    .orElseGet(() -> permissionRepository.save(new PermissionEntity(null, permissionName)));
+            permissions.add(permission);
+        }
+        return permissions;
+    }
+
+    private String generateCustomerNumber() {
+        String customerNumber;
+        do {
+            customerNumber = "CUST-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
+        } while (customerRepository.existsByCustomerNumber(customerNumber));
+        return customerNumber;
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private UserEntity syncUserState(UserEntity user) {
